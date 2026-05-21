@@ -1,8 +1,7 @@
 "use client";
-
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase/client";
 
 export default function DashboardLayout({
   children,
@@ -12,12 +11,11 @@ export default function DashboardLayout({
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) {
-        router.push("/login");
-      }
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) router.push("/login");
     });
-  }, []);
+  }, [router]);
 
   return <>{children}</>;
 }
