@@ -12,7 +12,8 @@ export async function GET() {
   const { data, error } = await supabase
     .from("habits")
     .select("*")
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error }, { status: 500 });
   return NextResponse.json(data);
@@ -27,10 +28,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-
   const { data, error } = await supabase
     .from("habits")
-    .insert({ ...body, user_id: user.id })
+    .insert({ ...body, user_id: user.id, streak: 0 })
     .select()
     .single();
 
@@ -58,18 +58,29 @@ export async function PUT(req: Request) {
   const body = await req.json();
   const { id, ...rest } = body;
 
-  const { data, error } = await supabase
-    .from("habits")
-    .update(rest)
-    .eq("id", id)
-    .eq("user_id", user.id)
-    .select()
-    .single();
-
-  if (error) return NextResponse.json({ error }, { status: 500 });
-
-  // Si se está marcando como completado
   if (rest.completed === true) {
+    const { data: habit } = await supabase
+      .from("habits")
+      .select("streak, last_completed")
+      .eq("id", id)
+      .single();
+
+    const today = new Date().toISOString().split("T")[0];
+    const lastCompleted = habit?.last_completed;
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    const newStreak =
+      lastCompleted === yesterdayStr
+        ? (habit?.streak ?? 0) + 1
+        : lastCompleted === today
+          ? (habit?.streak ?? 1)
+          : 1;
+
+    rest.streak = newStreak;
+    rest.last_completed = today;
+
     await supabase.from("activity_logs").insert({
       user_id: user.id,
       habit_id: id,
@@ -79,6 +90,17 @@ export async function PUT(req: Request) {
     });
   }
 
+  const { completed, ...updatePayload } = rest;
+
+  const { data, error } = await supabase
+    .from("habits")
+    .update(updatePayload)
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error }, { status: 500 });
   return NextResponse.json(data);
 }
 
@@ -91,7 +113,6 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await req.json();
-
   const { error } = await supabase
     .from("habits")
     .delete()
