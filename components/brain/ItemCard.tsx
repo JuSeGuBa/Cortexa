@@ -19,39 +19,58 @@ interface Props {
   onEdit: (item: Item) => void;
 }
 
-const TYPE_EMOJI: Record<string, string> = {
-  note: "📝",
-  idea: "💡",
-  task: "📌",
-  link: "🔗",
-  resource: "📚",
-  insight: "🧠",
+const TYPE_CONFIG: Record<string, { emoji: string; color: string }> = {
+  note: { emoji: "📝", color: "#8b5cf6" },
+  idea: { emoji: "💡", color: "#f59e0b" },
+  task: { emoji: "📌", color: "#0ea5e9" },
+  link: { emoji: "🔗", color: "#06b6d4" },
+  resource: { emoji: "📚", color: "#10b981" },
+  insight: { emoji: "🧠", color: "#f43f5e" },
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  pending: "#f59e0b",
-  completed: "#22c55e",
-  archived: "#64748b",
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pending: { label: "pendiente", color: "#f59e0b" },
+  completed: { label: "completado", color: "#22c55e" },
+  archived: { label: "archivado", color: "#475569" },
 };
 
 export function ItemCard({ item, onDelete, onEdit }: Props) {
+  const typeConf = TYPE_CONFIG[item.type] ?? { emoji: "📄", color: "#6366f1" };
+  const statusConf = STATUS_CONFIG[item.status] ?? {
+    label: item.status,
+    color: "#475569",
+  };
+
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -4, borderColor: `${typeConf.color}40` }}
       style={{
-        background: "#0f172a",
-        border: "1px solid #1e293b",
-        borderRadius: 12,
+        background: "linear-gradient(145deg, #0d1424, #080f1e)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 16,
         padding: 20,
         display: "flex",
         flexDirection: "column",
-        gap: 10,
+        gap: 12,
+        position: "relative",
+        overflow: "hidden",
+        transition: "border-color 0.2s, transform 0.2s",
+        height: "100%",
       }}
     >
+      {/* Glow accent */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          background: `linear-gradient(90deg, ${typeConf.color}80, transparent)`,
+          borderRadius: "16px 16px 0 0",
+        }}
+      />
+
       {/* Top row */}
       <div
         style={{
@@ -60,23 +79,49 @@ export function ItemCard({ item, onDelete, onEdit }: Props) {
           alignItems: "center",
         }}
       >
-        <span style={{ fontSize: 20 }}>{TYPE_EMOJI[item.type] ?? "📄"}</span>
-        <span
+        <div
           style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: STATUS_COLOR[item.status] ?? "#94a3b8",
-            textTransform: "uppercase",
-            letterSpacing: 1,
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            background: `${typeConf.color}15`,
+            border: `1px solid ${typeConf.color}30`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
           }}
         >
-          {item.status}
+          {typeConf.emoji}
+        </div>
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 600,
+            color: statusConf.color,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            fontFamily: "var(--font-mono)",
+            background: `${statusConf.color}15`,
+            padding: "3px 8px",
+            borderRadius: 20,
+            border: `1px solid ${statusConf.color}30`,
+          }}
+        >
+          {statusConf.label}
         </span>
       </div>
 
       {/* Title */}
       <h3
-        style={{ color: "#f1f5f9", fontSize: 16, fontWeight: 600, margin: 0 }}
+        style={{
+          color: "#e2e8f0",
+          fontSize: 15,
+          fontWeight: 600,
+          margin: 0,
+          letterSpacing: "-0.3px",
+          lineHeight: 1.4,
+        }}
       >
         {item.title}
       </h3>
@@ -84,7 +129,13 @@ export function ItemCard({ item, onDelete, onEdit }: Props) {
       {/* Content */}
       {item.content && (
         <p
-          style={{ color: "#94a3b8", fontSize: 13, margin: 0, lineHeight: 1.5 }}
+          style={{
+            color: "#475569",
+            fontSize: 13,
+            margin: 0,
+            lineHeight: 1.6,
+            flex: 1,
+          }}
         >
           {item.content.length > 100
             ? item.content.slice(0, 100) + "…"
@@ -98,9 +149,15 @@ export function ItemCard({ item, onDelete, onEdit }: Props) {
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#0ea5e9", fontSize: 12, wordBreak: "break-all" }}
+          style={{
+            color: typeConf.color,
+            fontSize: 12,
+            wordBreak: "break-all",
+            opacity: 0.8,
+            textDecoration: "none",
+          }}
         >
-          {item.url}
+          {"↗ " + item.url.replace(/^https?:\/\//, "").slice(0, 40)}
         </a>
       )}
 
@@ -111,11 +168,13 @@ export function ItemCard({ item, onDelete, onEdit }: Props) {
             <span
               key={tag}
               style={{
-                background: "#1e293b",
-                color: "#94a3b8",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: "#475569",
                 fontSize: 11,
                 padding: "2px 8px",
                 borderRadius: 20,
+                fontFamily: "var(--font-mono)",
               }}
             >
               #{tag}
@@ -126,38 +185,47 @@ export function ItemCard({ item, onDelete, onEdit }: Props) {
 
       {/* Actions */}
       <div
-        style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 8 }}
+        style={{ display: "flex", gap: 8, marginTop: "auto", paddingTop: 4 }}
       >
-        <button
+        <motion.button
+          whileHover={{ background: "rgba(99,102,241,0.15)" }}
           onClick={() => onEdit(item)}
           style={{
             flex: 1,
-            padding: "6px 0",
-            borderRadius: 6,
-            border: "1px solid #1e293b",
+            padding: "8px 0",
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.08)",
             background: "transparent",
-            color: "#94a3b8",
+            color: "#64748b",
             cursor: "pointer",
-            fontSize: 13,
+            fontSize: 12,
+            fontWeight: 500,
+            transition: "all 0.15s",
           }}
         >
           Editar
-        </button>
-        <button
+        </motion.button>
+        <motion.button
+          whileHover={{
+            background: "rgba(239,68,68,0.1)",
+            borderColor: "rgba(239,68,68,0.4)",
+          }}
           onClick={() => onDelete(item.id)}
           style={{
             flex: 1,
-            padding: "6px 0",
-            borderRadius: 6,
-            border: "1px solid #7f1d1d",
+            padding: "8px 0",
+            borderRadius: 8,
+            border: "1px solid rgba(239,68,68,0.2)",
             background: "transparent",
             color: "#ef4444",
             cursor: "pointer",
-            fontSize: 13,
+            fontSize: 12,
+            fontWeight: 500,
+            transition: "all 0.15s",
           }}
         >
           Eliminar
-        </button>
+        </motion.button>
       </div>
     </motion.div>
   );

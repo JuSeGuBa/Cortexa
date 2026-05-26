@@ -9,11 +9,11 @@ interface DayActivity {
 }
 
 function getColor(count: number): string {
-  if (count === 0) return "#1a1a2e";
-  if (count === 1) return "#1e3a5f";
-  if (count === 2) return "#1a6b8a";
-  if (count === 3) return "#0ea5e9";
-  return "#38bdf8";
+  if (count === 0) return "rgba(255,255,255,0.04)";
+  if (count === 1) return "rgba(99,102,241,0.3)";
+  if (count === 2) return "rgba(99,102,241,0.55)";
+  if (count === 3) return "rgba(99,102,241,0.75)";
+  return "#6366f1";
 }
 
 function getLast12Weeks(): string[] {
@@ -30,6 +30,10 @@ function getLast12Weeks(): string[] {
 export function Heatmap() {
   const [data, setData] = useState<DayActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tooltip, setTooltip] = useState<{
+    date: string;
+    count: number;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/activity")
@@ -55,15 +59,19 @@ export function Heatmap() {
 
   if (loading)
     return (
-      <div style={{ height: 100, background: "#1a1a2e", borderRadius: 8 }} />
+      <div
+        style={{
+          height: 120,
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.03)",
+          animation: "pulse 2s infinite",
+        }}
+      />
     );
 
   return (
-    <div style={{ marginTop: 32 }}>
-      <h4 style={{ color: "#94a3b8", marginBottom: 12, fontSize: 14 }}>
-        Actividad — últimas 12 semanas
-      </h4>
-      <div style={{ display: "flex", gap: 4 }}>
+    <div>
+      <div style={{ display: "flex", gap: 4, position: "relative" }}>
         {weeks.map((week, wi) => (
           <div
             key={wi}
@@ -72,19 +80,71 @@ export function Heatmap() {
             {week.map((day) => (
               <motion.div
                 key={day.date}
-                title={`${day.date}: ${day.count} acciones`}
-                whileHover={{ scale: 1.4 }}
+                onHoverStart={() => setTooltip(day)}
+                onHoverEnd={() => setTooltip(null)}
+                whileHover={{ scale: 1.5, zIndex: 10 }}
                 style={{
-                  width: 14,
-                  height: 14,
+                  width: 12,
+                  height: 12,
                   borderRadius: 3,
                   background: getColor(day.count),
                   cursor: "default",
+                  border:
+                    day.count > 0
+                      ? "1px solid rgba(99,102,241,0.3)"
+                      : "1px solid rgba(255,255,255,0.04)",
+                  boxShadow:
+                    day.count > 2 ? "0 0 6px rgba(99,102,241,0.5)" : "none",
                 }}
               />
             ))}
           </div>
         ))}
+      </div>
+      {tooltip && (
+        <div
+          style={{
+            marginTop: 12,
+            fontSize: 12,
+            color: "#6366f1",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          {tooltip.date} · {tooltip.count} acciones
+        </div>
+      )}
+      <div
+        style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 16 }}
+      >
+        <span
+          style={{
+            fontSize: 11,
+            color: "#334155",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          menos
+        </span>
+        {[0, 1, 2, 3, 4].map((v) => (
+          <div
+            key={v}
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              background: getColor(v),
+            }}
+          />
+        ))}
+        <span
+          style={{
+            fontSize: 11,
+            color: "#334155",
+            fontFamily: "var(--font-mono)",
+          }}
+        >
+          más
+        </span>
       </div>
     </div>
   );

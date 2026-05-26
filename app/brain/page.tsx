@@ -18,10 +18,15 @@ interface Item {
 
 const TYPES = ["all", "note", "idea", "task", "link", "resource", "insight"];
 
-async function fetchItems(): Promise<Item[]> {
-  const res = await fetch("/api/items");
-  return res.json();
-}
+const TYPE_COLORS: Record<string, string> = {
+  all: "#6366f1",
+  note: "#8b5cf6",
+  idea: "#f59e0b",
+  task: "#0ea5e9",
+  link: "#06b6d4",
+  resource: "#10b981",
+  insight: "#f43f5e",
+};
 
 export default function BrainPage() {
   const [items, setItems] = useState<Item[]>([]);
@@ -31,26 +36,25 @@ export default function BrainPage() {
   const [editItem, setEditItem] = useState<Item | null>(null);
 
   const loadItems = useCallback(async () => {
-    setLoading(true);
-    const data = await fetchItems();
-    setItems(data);
+    const res = await fetch("/api/items");
+    const data = await res.json();
+    setItems(Array.isArray(data) ? data : []);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    let ignore = false;
-
-    fetchItems().then((data) => {
-      if (ignore) {
-        return;
+    let cancelled = false;
+    async function fetchItems() {
+      const res = await fetch("/api/items");
+      const data = await res.json();
+      if (!cancelled) {
+        setItems(Array.isArray(data) ? data : []);
+        setLoading(false);
       }
-
-      setItems(data);
-      setLoading(false);
-    });
-
+    }
+    fetchItems();
     return () => {
-      ignore = true;
+      cancelled = true;
     };
   }, []);
 
@@ -77,69 +81,142 @@ export default function BrainPage() {
     filter === "all" ? items : items.filter((i) => i.type === filter);
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: "40px 40px 80px", maxWidth: 1100 }}>
       {/* Header */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         style={{
+          marginBottom: 40,
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
+          alignItems: "flex-end",
         }}
       >
-        <h1
-          style={{ color: "#f1f5f9", fontSize: 28, fontWeight: 700, margin: 0 }}
-        >
-          🧠 Brain
-        </h1>
-        <button
+        <div>
+          <p
+            style={{
+              fontSize: 12,
+              color: "#4f46e5",
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              fontFamily: "var(--font-mono)",
+              margin: "0 0 8px",
+            }}
+          >
+            {items.length} elementos guardados
+          </p>
+          <h1
+            style={{
+              fontSize: 36,
+              fontWeight: 700,
+              margin: 0,
+              letterSpacing: "-1px",
+              background: "linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            Brain
+          </h1>
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => setShowModal(true)}
           style={{
-            background: "#0ea5e9",
-            color: "#fff",
+            padding: "12px 24px",
+            borderRadius: 12,
             border: "none",
-            borderRadius: 8,
-            padding: "10px 20px",
             cursor: "pointer",
-            fontWeight: 600,
+            background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
+            color: "#fff",
             fontSize: 14,
+            fontWeight: 600,
+            boxShadow: "0 0 24px rgba(99,102,241,0.4)",
+            letterSpacing: "-0.2px",
           }}
         >
           + Nuevo
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
-      {/* Filtros */}
-      <div
-        style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}
+      {/* Filters */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1, ease: "easeOut" }}
+        style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}
       >
-        {TYPES.map((t) => (
-          <button
-            key={t}
-            onClick={() => setFilter(t)}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 20,
-              border: "1px solid",
-              borderColor: filter === t ? "#0ea5e9" : "#1e293b",
-              background: filter === t ? "#0ea5e9" : "transparent",
-              color: filter === t ? "#fff" : "#94a3b8",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 500,
-              textTransform: "capitalize",
-            }}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
+        {TYPES.map((t) => {
+          const active = filter === t;
+          const color = TYPE_COLORS[t] ?? "#6366f1";
+          return (
+            <motion.button
+              key={t}
+              onClick={() => setFilter(t)}
+              whileHover={{ y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              style={{
+                padding: "7px 16px",
+                borderRadius: 20,
+                cursor: "pointer",
+                border: `1px solid ${active ? color : "rgba(255,255,255,0.06)"}`,
+                background: active ? `${color}18` : "transparent",
+                color: active ? color : "#475569",
+                fontSize: 13,
+                fontWeight: active ? 600 : 400,
+                textTransform: "capitalize",
+                transition: "all 0.15s ease",
+                boxShadow: active ? `0 0 12px ${color}20` : "none",
+              }}
+            >
+              {t}
+            </motion.button>
+          );
+        })}
+      </motion.div>
 
       {/* Grid */}
       {loading ? (
-        <p style={{ color: "#475569" }}>Cargando...</p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              style={{
+                height: 160,
+                borderRadius: 16,
+                background: "rgba(255,255,255,0.03)",
+                opacity: 1 - i * 0.2,
+              }}
+            />
+          ))}
+        </div>
       ) : filtered.length === 0 ? (
-        <p style={{ color: "#475569" }}>No hay items aún.</p>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          style={{ textAlign: "center", paddingTop: 80 }}
+        >
+          <p style={{ fontSize: 48, margin: "0 0 16px" }}>🧠</p>
+          <p
+            style={{
+              color: "#334155",
+              fontFamily: "var(--font-mono)",
+              fontSize: 13,
+            }}
+          >
+            {"// sin elementos en esta categoría"}
+          </p>
+        </motion.div>
       ) : (
         <motion.div
           layout
@@ -150,19 +227,25 @@ export default function BrainPage() {
           }}
         >
           <AnimatePresence>
-            {filtered.map((item) => (
-              <ItemCard
+            {filtered.map((item, i) => (
+              <motion.div
                 key={item.id}
-                item={item}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-              />
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ delay: i * 0.05, ease: "easeOut" }}
+              >
+                <ItemCard
+                  item={item}
+                  onDelete={handleDelete}
+                  onEdit={handleEdit}
+                />
+              </motion.div>
             ))}
           </AnimatePresence>
         </motion.div>
       )}
 
-      {/* Modal */}
       {showModal && (
         <CreateItemModal
           editItem={editItem}

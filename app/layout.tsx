@@ -1,13 +1,25 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Space_Grotesk, DM_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
+import { SidebarWrapper } from "@/components/ui/SidebarWrapper";
+import { AnimatedBackground } from "@/components/ui/AnimatedBackground";
+import { MainWrapper } from "@/components/ui/MainWrapper";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+});
+
+const dmMono = DM_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+});
 
 export const metadata: Metadata = {
-  title: "Cortexa",
-  description: "Intelligent Productivity System",
+  title: "Cortexa — Intelligent Productivity",
+  description: "Your second brain",
 };
 
 export default function RootLayout({
@@ -19,75 +31,19 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={geist.variable}
+        className={`${spaceGrotesk.variable} ${dmMono.variable}`}
         style={{
           margin: 0,
           background: "#020617",
           minHeight: "100vh",
           display: "flex",
+          fontFamily: "var(--font-display), sans-serif",
+          overflowX: "hidden",
         }}
       >
-        {/* Sidebar */}
-        <aside
-          style={{
-            width: 220,
-            background: "#0f172a",
-            borderRight: "1px solid #1e293b",
-            padding: "24px 16px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            position: "fixed",
-            top: 0,
-            left: 0,
-            height: "100vh",
-          }}
-        >
-          <div
-            style={{
-              color: "#f1f5f9",
-              fontWeight: 700,
-              fontSize: 18,
-              marginBottom: 24,
-              paddingLeft: 8,
-            }}
-          >
-            🧠 Cortexa
-          </div>
-          {[
-            { href: "/dashboard", label: "📊 Dashboard" },
-            { href: "/brain", label: "🧠 Brain" },
-            { href: "/habits", label: "🎯 Hábitos" },
-          ].map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              style={{
-                color: "#94a3b8",
-                textDecoration: "none",
-                padding: "10px 12px",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 500,
-                display: "block",
-              }}
-            >
-              {label}
-            </Link>
-          ))}
-        </aside>
-
-        {/* Main content */}
-        <main
-          style={{
-            marginLeft: 220,
-            flex: 1,
-            minHeight: "100vh",
-            color: "#f1f5f9",
-          }}
-        >
-          {children}
-        </main>
+        <AnimatedBackground />
+        <SidebarWrapper />
+        <MainWrapper>{children}</MainWrapper>
       </body>
     </html>
   );
